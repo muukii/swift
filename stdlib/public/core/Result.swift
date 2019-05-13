@@ -121,6 +121,22 @@ public enum Result<Success, Failure: Error> {
       return transform(failure)
     }
   }
+}
+
+extension Result where Failure == Swift.Error {
+
+  /// Creates a new result by evaluating a throwing closure, capturing the
+  /// returned value as a success, or any thrown error as a failure.
+  ///
+  /// - Parameter body: A throwing closure to evaluate.
+  @_transparent
+  public init(catching body: () throws -> Success) {
+    do {
+      self = .success(try body())
+    } catch {
+      self = .failure(error)
+    }
+  }
   
   /// Returns the success value as a throwing expression.
   ///
@@ -148,17 +164,18 @@ public enum Result<Success, Failure: Error> {
   }
 }
 
-extension Result where Failure == Swift.Error {
-  /// Creates a new result by evaluating a throwing closure, capturing the
-  /// returned value as a success, or any thrown error as a failure.
-  ///
-  /// - Parameter body: A throwing closure to evaluate.
-  @_transparent
-  public init(catching body: () throws -> Success) {
-    do {
-      self = .success(try body())
-    } catch {
-      self = .failure(error)
+extension Result where Failure == Never {
+  
+  public init(catching body: () -> Success) {
+    self = .success(body())
+  }
+  
+  public func get() -> Success {
+    switch self {
+    case let .success(success):
+      return success
+    case .failure:
+      fatalError()
     }
   }
 }
